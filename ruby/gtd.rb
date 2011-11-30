@@ -38,7 +38,9 @@ end
 
 raise "Formato incorrecto" if buckets.size != 5
 
-buckets.each_pair do |bucket, tasks|
+names.each_with_index do |name, idx|
+  tasks = buckets[name]
+
   tasks.sort! do |a,b|
     a_weight, b_weight = 0, 0
     a_weight += 2 if a =~ /urgent/
@@ -53,10 +55,30 @@ buckets.each_pair do |bucket, tasks|
       a_weight < b_weight ? 1 : -1
     end
   end
+
+  (idx + 1).upto(4) do |idx|
+    outter_bucket = names[idx]
+    tasks.reject! { |t|
+      pattern = t.strip.gsub(/\(.*/, '')
+      pattern = /#{pattern}/
+      buckets[outter_bucket].any?{ |it| it =~ pattern}
+    }
+  end
+
+  tasks.reject! { |t|
+    idx = tasks.find_index(t)
+    pattern = t.strip.gsub(/\(.*/, '')
+    pattern = /#{pattern}/
+    range = (idx + 1) .. (tasks.length - 1)
+    tasks[range].any?{ |it| it =~ pattern}
+  }
+
 end
 
 names.each do |name|
   puts name.to_s.upcase
-  puts buckets[name].to_s
+  buckets[name].each do |task|
+    puts task.to_s
+  end
   puts "\n"
 end

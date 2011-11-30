@@ -11,16 +11,16 @@ setlocal smarttab       " smart tabulatin and backspace
 setlocal expandtab      " To spaces to tabs 'set noexpandtab' and ':retab!'
 setlocal foldmethod=indent
 
-nmap <silent> <leader>u :GtdMark "urgent"<CR>
-nmap <silent> <leader>i :GtdMark "important"<CR>
+nmap <buffer> <silent> <leader>u :GtdMark "urgent"<CR>
+nmap <buffer> <silent> <leader>i :GtdMark "important"<CR>
 
-nmap <silent> <leader>t :GtdMove "today"<CR>
-nmap <silent> <leader>n :GtdMove "next"<CR>
-nmap <silent> <leader>s :GtdMove "someday"<CR>
+nmap <buffer> <silent> <leader>t :GtdMove "today"<CR>
+nmap <buffer> <silent> <leader>n :GtdMove "next"<CR>
+nmap <buffer> <silent> <leader>s :GtdMove "someday"<CR>
 
-nmap <silent> <leader>x :GtdDone<CR>
-nmap <silent> <leader>c :GtdClean 'false'<CR>
-nmap <silent> <leader>a :GtdClean 'true'<CR>
+nmap <buffer> <silent> <leader>x :GtdDone<CR>
+nmap <buffer> <silent> <leader>c :GtdClean 'false'<CR>
+nmap <buffer> <silent> <leader>a :GtdClean 'true'<CR>
 " au BufWritePost <buffer> :GtdClean
 
 function! s:GtdMark(mark)
