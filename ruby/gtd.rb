@@ -1,28 +1,29 @@
 contents = STDIN.read
-archive  = ARGV[0] == 'true'
+raise "Cambia espacios por tabulaciones" if contents =~ /\t/
 
-buckets = {}
-names = [:inbox, :today, :next, :someday, :archived]
-names.each { |name| buckets[name] = []}
+buckets = {
+  inbox:     [],
+  today:     [],
+  next:      [],
+  someday:   [],
+  archived:  []
+}
 
+SORTING_RE   = %r{^  \[(#{buckets.keys.join('|')})\]}
+archive      = ARGV[0] == 'true'
 bucket, task = nil, nil
+
 contents.each_line do |line|
   case line
-  when /^\s+$/
-    next
-  when /^\w+$/
+  when /^$/ then next
+  when /^\w+/
     # puts "Bucket: #{line.chomp.downcase.to_sym}"
     bucket = buckets[line.chomp.downcase.to_sym]
-  when /^  .*\[today\]/
-    task = line.sub('[today] ', '')
-    buckets[:today] << task
-  when /^  .*\[next\]/
-    task = line.sub('[next] ', '')
-    buckets[:next] << task
-  when /^  .*\[someday\]/
-    task = line.sub('[someday] ', '')
-    buckets[:someday] << task
-  when /^  [^ ]/
+  when SORTING_RE
+    bucket_name = $1.to_sym
+    task = line.sub("[#{bucket_name}] ", '')
+    buckets[bucket_name] << task
+  when /^  \S/
     # puts "Task: #{line}"
     task = line
     if archive && line =~ /^  \d{8}/
@@ -35,50 +36,34 @@ contents.each_line do |line|
     task << line
   end
 end
-
 raise "Formato incorrecto" if buckets.size != 5
 
-names.each_with_index do |name, idx|
-  tasks = buckets[name]
+WEIGH_RE = %r{\((.*)\)}
+weigh =->(t) {
+  return -1 if t =~ /^  \d{8}/
+  labels = t.lines.first.chomp.scan(WEIGH_RE)[0][0].split(", ") rescue []
+  labels.inject(0) do |w, l|
+    w += {
+      # 'hard'      => -0.5,
+      'important' => 1,
+      'urgent'    => 2
+    }[l] || 0
+  end
+}
 
-  tasks.sort! do |a,b|
-    a_weight, b_weight = 0, 0
-    a_weight += 2 if a =~ /urgent/
-    b_weight += 2 if b =~ /urgent/
-    a_weight += 1 if a =~ /important/
-    b_weight += 1 if b =~ /important/
-    a_weight = -1 if a =~ /^  \d{8}/
-    b_weight = -1 if b =~ /^  \d{8}/
-    if a_weight == b_weight
-      a_weight == -1 ? b <=> a : a <=> b
+buckets.each_pair do |name, tasks|
+  tasks.sort! do |t1,t2|
+    t1_weight = weigh.(t1)
+    t2_wight = weigh.(t2)
+
+    if t1_weight == t2_wight
+      t1_weight == -1 ? t2 <=> t1 : t1 <=> t2
     else
-      a_weight < b_weight ? 1 : -1
+      t1_weight < t2_wight ? 1 : -1
     end
   end
 
-  (idx + 1).upto(4) do |idx|
-    outter_bucket = names[idx]
-    tasks.reject! { |t|
-      pattern = t.strip.gsub(/\(.*/, '')
-      pattern = /#{pattern}/
-      buckets[outter_bucket].any?{ |it| it =~ pattern}
-    }
-  end
-
-  tasks.reject! { |t|
-    idx = tasks.find_index(t)
-    pattern = t.strip.gsub(/\(.*/, '')
-    pattern = /#{pattern}/
-    range = (idx + 1) .. (tasks.length - 1)
-    tasks[range].any?{ |it| it =~ pattern}
-  }
-
-end
-
-names.each do |name|
   puts name.to_s.upcase
-  buckets[name].each do |task|
-    puts task.to_s
-  end
-  puts "\n"
+  tasks.each { |t| puts t }
+  puts
 end
